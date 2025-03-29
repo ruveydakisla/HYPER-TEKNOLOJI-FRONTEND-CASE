@@ -1,98 +1,93 @@
+const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJMb2dpblR5cGUiOiIxIiwiQ3VzdG9tZXJJRCI6IjU1NzI0IiwiRmlyc3ROYW1lIjoiRGVtbyIsIkxhc3ROYW1lIjoiSHlwZXIiLCJFbWFpbCI6ImRlbW9AaHlwZXIuY29tIiwiQ3VzdG9tZXJUeXBlSUQiOiIzMiIsIklzUmVzZWxsZXIiOiIwIiwiSXNBUEkiOiIxIiwiUmVmZXJhbmNlSUQiOiIiLCJSZWdpc3RlckRhdGUiOiIzLzI1LzIwMjUgMTowMDo0OCBQTSIsImV4cCI6MjA1NDE3MDQwOCwiaXNzIjoiaHR0cHM6Ly9oeXBlcnRla25vbG9qaS5jb20iLCJhdWQiOiJodHRwczovL2h5cGVydGVrbm9sb2ppLmNvbSJ9.jAFIfu0uSMQdRlb3u2Re0GpC6IvqwofLKbyv6s8yB3k";
 document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("card-container");
   const categoryContainer = document.getElementById("category-container");
 
   const cartItemsContainer = document.getElementById("cart-items");
-  const searchInput = document.getElementById("search-input"); // Arama kutusu
-  const categoryHeader = document.getElementById("category-header"); // Arama kutusu
+  const searchInput = document.getElementById("search-input"); 
+  const categoryHeader = document.getElementById("category-header"); 
   const cartPanel = document.getElementById("cart-panel");
   const categoryMenu = document.getElementById("category-container");
   const toggleCategory = document.getElementById("toggle-category");
-  
-  
-  let pageNumber = 1;
+  const openCart = document.getElementById("open-cart");
+  const closeCart = document.getElementById("close-cart");
+
+  // Sepeti aç
+  openCart.addEventListener("click", () => {
+    cartPanel.classList.add("open");
+  });
+
+  //Sepeti kapa
+  closeCart.addEventListener("click", () => {
+    cartPanel.classList.remove("open");
+  });
+
   let categoryId = 0;
- 
-  const payButton=document.querySelector("#btn-pay");
+
+  const payButton = document.querySelector("#btn-pay");
   const cart = [];
-  let products = []; // Tüm ürünleri saklamak için
+  let products = [];
 
-  try {
-    const response = await fetch(
-      `https://api.hyperteknoloji.com.tr/Products/List?page=${pageNumber}&pageSize=12&productCategoryID=0`,
-      {
-        method: "POST",
+  await fetchDatas();
+  async function fetchDatas() {
+    try {
+      const [productsRes, categoriesRes] = await Promise.all([
+        APICALL(`Products/List?productCategoryID=0`, "POST"),
+        APICALL(`Categories`, "GET")
+      ]);
+
+      products = productsRes?.data || [];
+      renderProducts(products);
+      renderCategories(categoriesRes?.data || []);
+    } catch (err) {
+      console.error("Verileri yüklenirken hata oluştu:", err);
+    }
+  }
+
+  async function APICALL(endpoint, method, body = {}) {
+    try {
+      const response = await fetch(`https://api.hyperteknoloji.com.tr/${endpoint}`, {
+        method,
         headers: {
           "Content-Type": "application/json",
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJMb2dpblR5cGUiOiIxIiwiQ3VzdG9tZXJJRCI6IjU1NzI0IiwiRmlyc3ROYW1lIjoiRGVtbyIsIkxhc3ROYW1lIjoiSHlwZXIiLCJFbWFpbCI6ImRlbW9AaHlwZXIuY29tIiwiQ3VzdG9tZXJUeXBlSUQiOiIzMiIsIklzUmVzZWxsZXIiOiIwIiwiSXNBUEkiOiIxIiwiUmVmZXJhbmNlSUQiOiIiLCJSZWdpc3RlckRhdGUiOiIzLzI1LzIwMjUgMTowMDo0OCBQTSIsImV4cCI6MjA1NDE3MDQwOCwiaXNzIjoiaHR0cHM6Ly9oeXBlcnRla25vbG9qaS5jb20iLCJhdWQiOiJodHRwczovL2h5cGVydGVrbm9sb2ppLmNvbSJ9.jAFIfu0uSMQdRlb3u2Re0GpC6IvqwofLKbyv6s8yB3k",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
-      }
-    );
+        body: method === "POST" ? JSON.stringify(body) : null,
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP hata! Durum: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+      return response.json();
+    } catch (err) {
+      console.error(`API Error (${endpoint}):`, err);
+      return null;
     }
-
-    const { data } = await response.json();
-    renderProducts(data); // Ürünleri ekrana bas
-  } catch (error) {
-    console.error("Veriler alınırken hata oluştu:", error);
   }
-  try {
-    const response = await fetch(
-      `https://api.hyperteknoloji.com.tr/Categories`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJMb2dpblR5cGUiOiIxIiwiQ3VzdG9tZXJJRCI6IjU1NzI0IiwiRmlyc3ROYW1lIjoiRGVtbyIsIkxhc3ROYW1lIjoiSHlwZXIiLCJFbWFpbCI6ImRlbW9AaHlwZXIuY29tIiwiQ3VzdG9tZXJUeXBlSUQiOiIzMiIsIklzUmVzZWxsZXIiOiIwIiwiSXNBUEkiOiIxIiwiUmVmZXJhbmNlSUQiOiIiLCJSZWdpc3RlckRhdGUiOiIzLzI1LzIwMjUgMTowMDo0OCBQTSIsImV4cCI6MjA1NDE3MDQwOCwiaXNzIjoiaHR0cHM6Ly9oeXBlcnRla25vbG9qaS5jb20iLCJhdWQiOiJodHRwczovL2h5cGVydGVrbm9sb2ppLmNvbSJ9.jAFIfu0uSMQdRlb3u2Re0GpC6IvqwofLKbyv6s8yB3k",
-        }
-      }
-    );
-  
-    if (!response.ok) {
-      throw new Error(`HTTP hata! Durum: ${response.status}`);
-    }
-  
-    const { data } = await response.json();
-    renderCategories(data); // Kategorileri ekrana bas
-  } catch (error) {
-    console.error("Kategoriler alınırken hata oluştu:", error);
-  }
-  
   async function fetchProducts() {
     try {
       const response = await fetch(
-        `https://api.hyperteknoloji.com.tr/Products/List?page=${pageNumber}&productCategoryID=${categoryId}`,
+        `https://api.hyperteknoloji.com.tr/Products/List?productCategoryID=${categoryId}`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJMb2dpblR5cGUiOiIxIiwiQ3VzdG9tZXJJRCI6IjU1NzI0IiwiRmlyc3ROYW1lIjoiRGVtbyIsIkxhc3ROYW1lIjoiSHlwZXIiLCJFbWFpbCI6ImRlbW9AaHlwZXIuY29tIiwiQ3VzdG9tZXJUeXBlSUQiOiIzMiIsIklzUmVzZWxsZXIiOiIwIiwiSXNBUEkiOiIxIiwiUmVmZXJhbmNlSUQiOiIiLCJSZWdpc3RlckRhdGUiOiIzLzI1LzIwMjUgMTowMDo0OCBQTSIsImV4cCI6MjA1NDE3MDQwOCwiaXNzIjoiaHR0cHM6Ly9oeXBlcnRla25vbG9qaS5jb20iLCJhdWQiOiJodHRwczovL2h5cGVydGVrbm9sb2ppLmNvbSJ9.jAFIfu0uSMQdRlb3u2Re0GpC6IvqwofLKbyv6s8yB3k",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({}),
         }
       );
-  
+
       if (!response.ok) {
-        throw new Error(`HTTP hata! Durum: ${response.status}`);
+        throw new Error(`HTTP hatası! Durum: ${response.status}`);
       }
-  
+
       const { data } = await response.json();
-      products = data; // Yeni ürün listesini sakla
-      renderProducts(products); // Ürünleri tekrar göster
+      products = data; 
+      renderProducts(products); 
     } catch (error) {
       console.error("Veriler alınırken hata oluştu:", error);
     }
   }
-  
-  // Sayfa değişiminde API çağrısını yenile
 
-  // Para formatlama fonksiyonu
+//TL biçimi görünüm
   function formatPrice(price) {
     return new Intl.NumberFormat("tr-TR", {
       style: "currency",
@@ -101,9 +96,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }).format(price);
   }
 
-  // Ürünleri ekrana basan fonksiyon
+  // Ürünleri ekrana ekleyen func
   function renderProducts(filteredProducts) {
-    container.innerHTML = ""; // Önceki ürünleri temizle
+    container.innerHTML = ""; 
     if (filteredProducts.length === 0) {
       container.innerHTML = `
           <div class="p-4 text-center text-gray-500 text-lg font-semibold">
@@ -111,12 +106,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
       `;
       return;
-  }
-        filteredProducts.forEach((item) => {
-            const card = document.createElement("div");
-            card.className =
-              "p-4 hover:scale-105 shadow h-min hover:shadow-lg transition-all duration-300 flex items-center flex-col";
-            card.innerHTML = `
+    }
+    filteredProducts.forEach((item) => {
+      const card = document.createElement("div");
+      card.className =
+        "p-4 hover:scale-105 shadow h-min hover:shadow-lg transition-all duration-300 flex items-center flex-col";
+      card.innerHTML = `
                       <img src="${
                         item.productData.productMainImage
                       }" width="300" height="300" class="mb-2 transition bg-red-200"/>
@@ -127,7 +122,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                         item.salePrice
                       )}</p>
                       <div class="w-full flex items-center justify-between mt-2 ">
-                          <button ${item.totalStock > 0 ? "" : "disabled"} id="add-to-cart-${item.productID}" class="whitespace-nowrap disabled:bg-red-800 text-xs bg-[#77B254] text-white py-1 px-3 rounded-lg hover:bg-[#5B913B] transition duration-300">
+                          <button ${
+                            item.totalStock > 0 ? "" : "disabled"
+                          } id="add-to-cart-${
+        item.productID
+      }" class="whitespace-nowrap disabled:bg-red-800 text-xs bg-[#77B254] text-white py-1 px-3 rounded-lg hover:bg-[#5B913B] transition duration-300">
                               ${item.totalStock > 0 ? "Sepete Ekle" : "Tükendi"}
                           </button>
                            <a href="${
@@ -140,45 +139,43 @@ document.addEventListener("DOMContentLoaded", async () => {
                           </a>
                       </div>
                   `;
-      
-            container.appendChild(card);
-      
-            // Sepete ekleme butonu
-            const addToCartButton = document.getElementById(
-              `add-to-cart-${item.productID}`
-            );
-          
-            addToCartButton.addEventListener("click", () => {
-              cart.push(item);
-              
-              // Sepeti aç
-              cartPanel.classList.add("open");
-            
-              Swal.fire({
-                title: "Sepete Eklendi!",
-                text: `${item.productName} başarıyla sepete eklendi.`,
-                icon: "success",
-                timer: 1500,
-                showConfirmButton: false,
-              });
-            
-              updateCartDisplay();
-              console.log(`${item.productName} sepete eklendi!`);
-            });
-            
-          });
-    
 
+      container.appendChild(card);
+
+      // Sepete ekle
+      const addToCartButton = document.getElementById(
+        `add-to-cart-${item.productID}`
+      );
+
+      addToCartButton.addEventListener("click", () => {
+        cart.push(item);
+
+        cartPanel.classList.add("open");
+
+        Swal.fire({
+          title: "Sepete Eklendi!",
+          text: `${item.productName} başarıyla sepete eklendi.`,
+          icon: "success",
+          timer: 1600,
+          showConfirmButton: false,
+        });
+
+        updateBasket();
+        console.log(`${item.productName} sepete eklendi!`);
+      });
+    });
   }
   function renderCategories(filteredCategories) {
-    categoryContainer.innerHTML = ""; 
-  
+    categoryContainer.innerHTML = "";
+
     const allCategoriesButton = document.createElement("button");
-    const closeMenuButton=document.createElement("div");
+    const closeMenuButton = document.createElement("div");
     closeMenuButton.addEventListener("click", () => {
       categoryMenu.classList.toggle("-translate-x-full");
-  });
-    closeMenuButton.className=" w-full text-gray-900 text-white flex justify-end  p-2 px-3 rounded md:hidden"
+    });
+    closeMenuButton.className =
+      " w-full text-gray-900 text-white flex justify-end  p-2 px-3 rounded md:hidden";
+
     closeMenuButton.innerHTML = `
     <button class="">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -186,27 +183,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     </svg>
     </button>
   `;
-  
+
     allCategoriesButton.className =
       "p-2 shadow hover:shadow-lg w-full text-white  transition-all duration-300 flex items-center justify-center bg-[#229799]";
-      allCategoriesButton.innerText = "Tüm Kategoriler";
-      allCategoriesButton.addEventListener("click", () => {
-      pageNumber = 1;
-      categoryId = 0; 
-      
+    allCategoriesButton.innerText = "Tüm Kategoriler";
+    allCategoriesButton.addEventListener("click", () => {
+      categoryId = 0;
+
       fetchProducts();
-      categoryHeader.innerText=""
+      categoryHeader.innerText = "";
     });
     categoryContainer.appendChild(closeMenuButton);
 
     categoryContainer.appendChild(allCategoriesButton);
-  
+
     filteredCategories.forEach((item) => {
       const card = document.createElement("button");
-      
-      // Seçili kategoriye göre arka plan rengini belirle
-      card.className = `p-2 shadow hover:shadow-lg w-full transition-all duration-300 flex items-center flex-col`; 
-  
+
+      card.className = `p-2 shadow hover:shadow-lg w-full transition-all duration-300 flex items-center flex-col`;
+
       card.innerHTML = `
         <div key="${item.productCategoryID}" class="w-full p-0.5 flex items-center space-x-1">
           <img src="${item.categoryDetail.categoryMainImage}" width="30"/>
@@ -214,30 +209,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
       `;
       card.addEventListener("click", () => {
-        pageNumber = 1;
         categoryId = item.productCategoryID;
-                categoryHeader.innerText = item.categoryName;
+        categoryHeader.innerText = item.categoryName;
         fetchProducts();
         categoryMenu.classList.toggle("-translate-x-full");
-
       });
-      
+
       categoryContainer.appendChild(card);
     });
   }
-  
-  // Arama işlevi
+
+  // search
   function filterProducts() {
-    const searchText = searchInput.value.toLowerCase(); // Kullanıcının yazdığı metin
+    const searchText = searchInput.value.toLowerCase(); 
     const filtered = products.filter((item) =>
       item.productName.toLowerCase().includes(searchText)
     );
-    renderProducts(filtered); // Filtrelenmiş ürünleri göster
+    renderProducts(filtered);
   }
 
-  // Arama kutusuna event listener ekle
+  // search çubuğu event listener
   searchInput.addEventListener("input", filterProducts);
- 
+
   payButton.addEventListener("click", () => {
     Swal.fire({
       title: "Emin misiniz?",
@@ -247,20 +240,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       confirmButtonText: "Evet, onaylıyorum!",
-      cancelButtonText: "İptal"
+      cancelButtonText: "İptal",
     }).then((result) => {
       if (result.isConfirmed) {
-        cart.length = 0; // Diziyi boşalt
-        updateCartDisplay(); // Sepet görünümünü güncelle
-        Swal.fire("Onaylandı!", "Ödeme işleminiz başarıyla tamamlandı.", "success");
+        cart.length = 0; 
+        updateBasket();
+        Swal.fire(
+          "Onaylandı!",
+          "Ödeme işleminiz başarıyla tamamlandı.",
+          "success"
+        );
       }
     });
   });
   toggleCategory.addEventListener("click", () => {
     categoryMenu.classList.toggle("-translate-x-full");
-});
-  // Sepet görüntüsünü güncelleyen fonksiyon
-  function updateCartDisplay() {
+  });
+  // sepeti güncelle
+  function updateBasket() {
     cartItemsContainer.innerHTML = "";
 
     if (cart.length === 0) {
@@ -286,7 +283,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const removeButton = cartItem.querySelector(".remove-from-cart");
         removeButton.addEventListener("click", () => {
           cart.splice(cart.indexOf(item), 1);
-          updateCartDisplay();
+          updateBasket();
           console.log(`${item.productName} sepetten çıkarıldı!`);
         });
 
