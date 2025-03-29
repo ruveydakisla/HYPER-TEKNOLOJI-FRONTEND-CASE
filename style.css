@@ -1,0 +1,47 @@
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Sepet için genel stil */
+@layer utilities {
+    .scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+    .scrollbar::-webkit-scrollbar-track {
+      background: #F5F5F5; /* Arkaplan rengi */
+    }
+    .scrollbar::-webkit-scrollbar-thumb {
+      background: #2A2F4F; /* Kaydırma çubuğu rengi */
+      border-radius: 4px;
+    }
+    .scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #2A2F4F; /* Hover rengi */
+    }
+  }
+  
+#cart-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px; /* Sepet panelinin genişliği */
+    height: 100%;
+    background-color: #fff;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.2);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Mobilde sepetin kayarak açılmasını sağlamak */
+@media (max-width: 768px) {
+    #cart-panel {
+        width: 250px;
+    }
+}
+
+/* Sepet açılınca bu sınıfı ekleyeceğiz */
+#cart-panel.open {
+    transform: translateX(0);
+}
